@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DomainActionEnvelopeV1",
+  "type": "object",
+  "required": [
+    "version",
+    "domain",
+    "intent",
+    "action",
+    "payload",
+    "requiresConfirmation",
+    "idempotencyKey"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "domain": {
+      "type": "string",
+      "enum": [
+        "wechat",
+        "trade"
+      ]
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "payload": {
+      "type": "object"
+    },
+    "requiresConfirmation": {
+      "type": "boolean"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 8
+    },
+    "clientRequestId": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

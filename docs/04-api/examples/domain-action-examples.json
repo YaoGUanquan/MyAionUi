@@ -1,0 +1,75 @@
+{
+  "cases": [
+    {
+      "name": "wechat_publish_draft_pending_confirmation",
+      "request": {
+        "version": "v1",
+        "domain": "wechat",
+        "intent": "publish_article",
+        "action": "push_draft",
+        "payload": {
+          "title": "A",
+          "body": "B"
+        },
+        "requiresConfirmation": true,
+        "idempotencyKey": "idem-wechat-001",
+        "clientRequestId": "cli-001",
+        "timestamp": "2026-05-21T10:00:00+08:00"
+      },
+      "response": {
+        "status": "pending_confirmation",
+        "humanMessage": "Please confirm push draft",
+        "machineCode": "PENDING_CONFIRMATION",
+        "traceId": "trace-001",
+        "confirmationToken": "ct-001"
+      }
+    },
+    {
+      "name": "trade_list_product_pending_confirmation",
+      "request": {
+        "version": "v1",
+        "domain": "trade",
+        "intent": "list_product",
+        "action": "publish_listing",
+        "payload": {
+          "sku": "SKU-1",
+          "price": 99.5
+        },
+        "requiresConfirmation": true,
+        "idempotencyKey": "idem-trade-001",
+        "clientRequestId": "cli-002",
+        "timestamp": "2026-05-21T10:01:00+08:00"
+      },
+      "response": {
+        "status": "pending_confirmation",
+        "humanMessage": "Please confirm product listing",
+        "machineCode": "PENDING_CONFIRMATION",
+        "traceId": "trace-002",
+        "confirmationToken": "ct-002"
+      }
+    },
+    {
+      "name": "trade_idempotency_replay",
+      "request": {
+        "version": "v1",
+        "domain": "trade",
+        "intent": "list_product",
+        "action": "publish_listing",
+        "payload": {
+          "sku": "SKU-1",
+          "price": 99.5
+        },
+        "requiresConfirmation": true,
+        "idempotencyKey": "idem-trade-001",
+        "clientRequestId": "cli-003",
+        "timestamp": "2026-05-21T10:02:00+08:00"
+      },
+      "response": {
+        "status": "succeeded",
+        "humanMessage": "Idempotent replay, original result returned",
+        "machineCode": "IDEMPOTENT_REPLAY",
+        "traceId": "trace-002"
+      }
+    }
+  ]
+}
