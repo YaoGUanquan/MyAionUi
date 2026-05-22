@@ -35,13 +35,14 @@ import { Button, ConfigProvider, Dropdown, Menu, Message } from '@arco-design/we
 import { Down, Left, Robot, Write } from '@icon-park/react';
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import styles from './index.module.css';
 
 const GuidPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { domainKey } = useParams<{ domainKey?: 'wechat' | 'trade' }>();
   const guidContainerRef = useRef<HTMLDivElement>(null);
   const openAssistantDetailsRef = useRef<(() => void) | null>(null);
   const descriptionTextRef = useRef<HTMLDivElement>(null);
@@ -50,6 +51,23 @@ const GuidPage: React.FC = () => {
 
   const localeKey = resolveLocaleKey(i18n.language);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const domainConfig = useMemo(() => {
+    if (domainKey === 'wechat') {
+      return {
+        title: '公众号',
+        placeholder: '例如：生成一篇新品发布文章，并准备推送到草稿箱',
+        description: '当前处于公众号域，对话将围绕文章生成、草稿推送等业务动作展开。',
+      };
+    }
+    if (domainKey === 'trade') {
+      return {
+        title: '外贸',
+        placeholder: '例如：查询商品并生成上架建议',
+        description: '当前处于外贸域，对话将围绕商品查询、上架准备等业务动作展开。',
+      };
+    }
+    return null;
+  }, [domainKey]);
 
   // Open external link
   const openLink = useCallback(async (url: string) => {
@@ -304,14 +322,16 @@ const GuidPage: React.FC = () => {
   }, [agentSelection.isPresetAgent, selectedAssistantRecord]);
 
   const heroTitle = useMemo(() => {
+    if (domainConfig) return `${domainConfig.title} 对话`;
     if (!agentSelection.isPresetAgent) return t('conversation.welcome.title');
     const i18nName = selectedAssistantRecord?.nameI18n?.[localeKey];
     if (i18nName) return i18nName;
     return mention.selectedAgentLabel || t('conversation.welcome.title');
-  }, [agentSelection.isPresetAgent, selectedAssistantRecord, localeKey, mention.selectedAgentLabel, t]);
+  }, [agentSelection.isPresetAgent, selectedAssistantRecord, localeKey, mention.selectedAgentLabel, t, domainConfig]);
   const selectedAssistantDescription = useMemo(() => {
+    if (domainConfig) return domainConfig.description;
     return selectedAssistantRecord?.descriptionI18n?.[localeKey] || selectedAssistantRecord?.description || '';
-  }, [selectedAssistantRecord, localeKey]);
+  }, [selectedAssistantRecord, localeKey, domainConfig]);
   const selectedAssistantAvatar = useMemo(() => {
     if (!agentSelection.isPresetAgent) return null;
     const selectedId = agentSelection.selectedAgentInfo?.customAgentId;
@@ -709,7 +729,11 @@ const GuidPage: React.FC = () => {
             onPaste={guidInput.onPaste}
             onFocus={guidInput.handleTextareaFocus}
             onBlur={guidInput.handleTextareaBlur}
-            placeholder={`${mention.selectedAgentLabel}, ${typewriterPlaceholder || t('conversation.welcome.placeholder')}`}
+            placeholder={
+              domainConfig
+                ? `${domainConfig.title}：${domainConfig.placeholder}`
+                : `${mention.selectedAgentLabel}, ${typewriterPlaceholder || t('conversation.welcome.placeholder')}`
+            }
             isInputActive={guidInput.isInputFocused}
             isFileDragging={guidInput.isFileDragging}
             activeBorderColor={activeBorderColor}

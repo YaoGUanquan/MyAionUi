@@ -15,6 +15,10 @@ vi.mock('@/renderer/pages/guid', () => ({
   default: () => <div data-testid='guid-page'>Guid</div>,
 }));
 
+vi.mock('@/renderer/extensions/domain-shell/DomainLandingPage', () => ({
+  default: () => <div data-testid='domain-landing-page'>Domain Landing</div>,
+}));
+
 import PanelRoute from '@/renderer/components/layout/Router';
 
 const LayoutShell: React.FC = () => <Outlet />;
@@ -36,5 +40,14 @@ describe('PanelRoute team entry guard', () => {
     render(<PanelRoute layout={<LayoutShell />} />);
 
     expect(await screen.findByTestId('guid-page')).toBeInTheDocument();
+  });
+
+  it('renders the domain landing route normally', async () => {
+    window.location.hash = '#/domains/wechat';
+
+    render(<PanelRoute layout={<LayoutShell />} />);
+
+    expect(await screen.findByTestId('domain-landing-page')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#/domains/wechat');
   });
 });
