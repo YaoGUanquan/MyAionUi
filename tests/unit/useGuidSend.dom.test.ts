@@ -88,6 +88,7 @@ function makeDeps(overrides: Partial<GuidSendDeps> = {}): GuidSendDeps {
     navigate: vi.fn().mockResolvedValue(undefined),
     closeAllTabs: vi.fn(),
     openTab: vi.fn(),
+    domainKey: undefined,
     t: vi.fn((key: string) => key),
     ...overrides,
   } as GuidSendDeps;
@@ -209,6 +210,40 @@ describe('useGuidSend', () => {
 
       expect(deps.closeAllTabs).toHaveBeenCalled();
       expect(deps.openTab).toHaveBeenCalledWith({ id: 'new-conv', extra: { workspace: '' } });
+    });
+
+    it('passes domain when creating a conversation from a domain route', async () => {
+      const deps = makeDeps({ domainKey: 'trade' as any });
+      const { result } = renderHook(() => useGuidSend(deps));
+
+      await act(async () => {
+        await result.current.handleSend();
+      });
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          extra: expect.objectContaining({
+            domain: 'trade',
+          }),
+        })
+      );
+    });
+
+    it('does not pass domain for normal entry conversations', async () => {
+      const deps = makeDeps({ domainKey: undefined });
+      const { result } = renderHook(() => useGuidSend(deps));
+
+      await act(async () => {
+        await result.current.handleSend();
+      });
+
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          extra: expect.not.objectContaining({
+            domain: expect.anything(),
+          }),
+        })
+      );
     });
   });
 

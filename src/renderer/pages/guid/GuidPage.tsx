@@ -141,6 +141,7 @@ const GuidPage: React.FC = () => {
     setDir: guidInput.setDir,
     setLoading: guidInput.setLoading,
     loading: guidInput.loading,
+    domainKey,
 
     // Agent state
     selectedAgent: agentSelection.selectedAgent,

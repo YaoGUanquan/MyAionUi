@@ -132,6 +132,7 @@ export class SessionLifecycle {
   /** Returns null when auth is required (caller should bail). */
   private async establishSession(): Promise<NewSessionResponse | LoadSessionResponse | null> {
     const mcpServers = this.buildMcpServers();
+    const conversationContext = this.host.agentConfig.conversationContext;
     try {
       return this._sessionId
         ? await this.tryLoadOrCreate(mcpServers)
@@ -139,6 +140,7 @@ export class SessionLifecycle {
             cwd: this.host.agentConfig.cwd,
             mcpServers,
             additionalDirectories: this.host.agentConfig.additionalDirectories,
+            conversationContext,
           });
     } catch (err) {
       const normalized = normalizeError(err);
@@ -356,6 +358,7 @@ export class SessionLifecycle {
   };
 
   private async tryLoadOrCreate(mcpServers: McpServer[]): Promise<NewSessionResponse | LoadSessionResponse> {
+    const conversationContext = this.host.agentConfig.conversationContext;
     if (this._sessionId && this._client) {
       try {
         return await this._client.loadSession({
@@ -363,6 +366,7 @@ export class SessionLifecycle {
           cwd: this.host.agentConfig.cwd,
           mcpServers,
           additionalDirectories: this.host.agentConfig.additionalDirectories,
+          conversationContext,
         });
       } catch {
         this.host.callbacks.onSignal({ type: 'session_expired' });
@@ -372,6 +376,7 @@ export class SessionLifecycle {
       cwd: this.host.agentConfig.cwd,
       mcpServers,
       additionalDirectories: this.host.agentConfig.additionalDirectories,
+      conversationContext,
     });
   }
 

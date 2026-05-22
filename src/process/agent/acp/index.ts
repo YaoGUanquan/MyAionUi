@@ -6,6 +6,7 @@
 
 import { AcpAdapter } from '@process/agent/acp/AcpAdapter';
 import type { IMcpServer } from '@/common/config/storage';
+import type { ConversationDomain } from '@/common/config/storage';
 import { extractAtPaths, parseAllAtCommands, reconstructQuery } from '@/common/chat/atCommandParser';
 import type { TMessage } from '@/common/chat/chatLib';
 import type { IResponseMessage } from '@/common/adapter/ipcBridge';
@@ -100,6 +101,7 @@ export interface AcpAgentConfig {
     teamMcpStdioConfig?: { name: string; command: string; args: string[]; env: Array<{ name: string; value: string }> };
     /** Pending config option selections from Guid page (applied after session creation) */
     pendingConfigOptions?: Record<string, string>;
+    domain?: ConversationDomain;
   };
   onStreamEvent: (data: IResponseMessage) => void;
   onSignalEvent?: (data: IResponseMessage) => void; // 新增：仅发送信号，不更新UI
@@ -136,6 +138,7 @@ export class AcpAgent {
     teamMcpStdioConfig?: { name: string; command: string; args: string[]; env: Array<{ name: string; value: string }> };
     /** Pending config option selections from Guid page (applied after session creation) */
     pendingConfigOptions?: Record<string, string>;
+    domain?: ConversationDomain;
   };
   private connection: AcpConnection;
   private adapter: AcpAdapter;
@@ -344,7 +347,7 @@ export class AcpAgent {
         if (sessionMode) {
           await this.applySessionMode(sessionMode, true, `${this.extra.backend} YOLO mode`);
         }
-      } else if (this.extra.sessionMode && this.extra.sessionMode !== 'default') {
+      } else if (this.extra.backend !== 'codex' && this.extra.sessionMode && this.extra.sessionMode !== 'default') {
         // Apply non-default, non-YOLO session mode (e.g., acceptEdits, auto, dontAsk, plan)
         // so the CLI backend reflects the mode selected by the user on the Guid page.
         await this.applySessionMode(this.extra.sessionMode, false, `session mode`);
@@ -1528,6 +1531,7 @@ export class AcpAgent {
           ipcBridge.team.mcpStatus.emit({ teamId: teamId!, slotId, phase, ...extra });
         }
       : null;
+    const conversationContext = this.extra.domain ? { domain: this.extra.domain } : undefined;
 
     const doSession = async (): Promise<void> => {
       // Validate session ownership: only resume if the stored session belongs to this conversation.
@@ -1545,6 +1549,7 @@ export class AcpAgent {
           response = await this.connection.resumeSession(resumeSessionId, this.extra.workspace, {
             forkSession: false,
             mcpServers,
+            conversationContext,
           });
 
           if (mcpServers.length === 0) {
@@ -1567,7 +1572,10 @@ export class AcpAgent {
 
       // No stored session or resume failed — create a brand new session
       emitMcpStatus?.('session_injecting', { serverCount: mcpServers.length });
-      const response = await this.connection.newSession(this.extra.workspace, { mcpServers });
+      const response = await this.connection.newSession(this.extra.workspace, {
+        mcpServers,
+        conversationContext,
+      });
 
       if (mcpServers.length === 0) {
         emitMcpStatus?.('degraded');

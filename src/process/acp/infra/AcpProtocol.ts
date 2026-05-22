@@ -12,6 +12,7 @@ import type {
   Stream,
 } from '@agentclientprotocol/sdk';
 import { ClientSideConnection, PROTOCOL_VERSION } from '@agentclientprotocol/sdk';
+import type { AcpConversationContext } from '@process/acp/types';
 import type { PromptContent, ProtocolHandlers } from '@process/acp/types';
 
 // ─── Protocol-layer Params ────────────────────────────────────
@@ -20,6 +21,7 @@ export type CreateSessionParams = {
   cwd: string;
   mcpServers?: McpServer[];
   additionalDirectories?: string[];
+  conversationContext?: AcpConversationContext;
 };
 
 export type LoadSessionParams = {
@@ -27,6 +29,7 @@ export type LoadSessionParams = {
   cwd: string;
   mcpServers?: McpServer[];
   additionalDirectories?: string[];
+  conversationContext?: AcpConversationContext;
 };
 
 export type ForkSessionParams = {
@@ -79,6 +82,7 @@ export class AcpProtocol {
       cwd: params.cwd,
       mcpServers: params.mcpServers ?? [],
       additionalDirectories: params.additionalDirectories,
+      ...(params.conversationContext && { conversationContext: params.conversationContext }),
     });
   }
 
@@ -88,6 +92,7 @@ export class AcpProtocol {
       cwd: params.cwd,
       mcpServers: params.mcpServers ?? [],
       additionalDirectories: params.additionalDirectories,
+      ...(params.conversationContext && { conversationContext: params.conversationContext }),
     });
   }
 

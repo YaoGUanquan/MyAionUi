@@ -28,6 +28,7 @@ import {
   getWindowsShellExecutionOptions,
   loadFullShellEnvironment,
   normalizeNpxArgsForBundledBun,
+  resolveNpxDirect,
   resolveNpxPath,
 } from '@process/utils/shellEnv';
 import { readClaudeProviderEnvFromCcSwitch } from '@process/services/ccSwitchModelSource';
@@ -333,6 +334,7 @@ export type SpawnResult = { child: ChildProcess; isDetached: boolean };
 export type NpxPrepareResult = {
   cleanEnv: Record<string, string | undefined>;
   npxCommand: string;
+  directNpx?: { nodePath: string; npxScript: string } | null;
   extraArgs?: string[];
 };
 
@@ -400,19 +402,27 @@ export function spawnNpxBackend(
   {
     extraArgs = [],
     detached = false,
+    directNpx = null,
   }: {
     extraArgs?: string[];
     detached?: boolean;
+    directNpx?: { nodePath: string; npxScript: string } | null;
   } = {}
 ): SpawnResult {
-  const spawnArgs = ['x', '--bun', npxPackage, ...normalizeNpxArgsForBundledBun(extraArgs)];
+  const usingDirectNpx = Boolean(isWindows && directNpx);
+  const spawnArgs = usingDirectNpx
+    ? [directNpx!.npxScript, npxPackage, ...normalizeNpxArgsForBundledBun(extraArgs)]
+    : ['x', '--bun', npxPackage, ...normalizeNpxArgsForBundledBun(extraArgs)];
 
   const spawnStart = Date.now();
   // detached: true creates a new session (setsid) so the child has no controlling terminal.
   // Required for backends (e.g. CodeBuddy) that write to /dev/tty — without it, SIGTTOU
   // would suspend the entire Electron process group and freeze the UI.
   // On Windows, prefix with chcp 65001 to switch console to UTF-8, preventing GBK garbling.
-  const effectiveCommand = isWindows ? `chcp 65001 >nul && ${formatWindowsCommandForShell(npxCommand)}` : npxCommand;
+  const effectiveBaseCommand = usingDirectNpx ? directNpx!.nodePath : npxCommand;
+  const effectiveCommand = isWindows
+    ? `chcp 65001 >nul && ${formatWindowsCommandForShell(effectiveBaseCommand)}`
+    : effectiveBaseCommand;
   const child = spawn(effectiveCommand, spawnArgs, {
     cwd: workingDir,
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -433,7 +443,7 @@ export function spawnNpxBackend(
 async function prepareClaude(): Promise<NpxPrepareResult> {
   const cleanEnv = await prepareCleanEnv();
   Object.assign(cleanEnv, readClaudeProviderEnvFromCcSwitch());
-  return { cleanEnv, npxCommand: resolveNpxPath(cleanEnv) };
+  return { cleanEnv, npxCommand: resolveNpxPath(cleanEnv), directNpx: resolveNpxDirect(cleanEnv) };
 }
 
 /** Prepare clean env + resolve npx + run diagnostics for Codex ACP bridge. */
@@ -483,7 +493,7 @@ async function prepareCodex(codexAcpPackage: string = CODEX_ACP_NPX_PACKAGE): Pr
 
   console.log(`[ACP-PERF] connect: codex diagnostics ${Date.now() - diagStart}ms`);
 
-  return { cleanEnv, npxCommand: resolveNpxPath(cleanEnv) };
+  return { cleanEnv, npxCommand: resolveNpxPath(cleanEnv), directNpx: resolveNpxDirect(cleanEnv) };
 }
 
 /** Prepare clean env + resolve npx + load MCP config for CodeBuddy. */
@@ -504,6 +514,7 @@ async function prepareCodebuddy(): Promise<NpxPrepareResult> {
   return {
     cleanEnv,
     npxCommand: resolveNpxPath(cleanEnv),
+    directNpx: resolveNpxDirect(cleanEnv),
     extraArgs,
   };
 }
@@ -576,13 +587,14 @@ async function connectNpxBackend(config: {
   const { backend, npxPackage, prepareFn, workingDir, setup, cleanup } = config;
 
   const envStart = Date.now();
-  const { cleanEnv, npxCommand, extraArgs: prepExtraArgs = [] } = await prepareFn();
+  const { cleanEnv, npxCommand, directNpx = null, extraArgs: prepExtraArgs = [] } = await prepareFn();
   console.log(`[ACP-PERF] ${backend}: env prepared ${Date.now() - envStart}ms`);
 
   const isWindows = process.platform === 'win32';
   const opts = {
     extraArgs: [...(config.extraArgs ?? []), ...prepExtraArgs],
     detached: config.detached ?? false,
+    directNpx: isWindows && /(^|[\\/])bun\.exe$/i.test(npxCommand) ? directNpx : null,
   };
 
   try {

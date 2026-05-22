@@ -90,4 +90,33 @@ describe('buildAgentConversationParams', () => {
       }),
     });
   });
+
+  it('includes domain when provided', () => {
+    const params = buildAgentConversationParams({
+      backend: 'qwen',
+      name: 'Domain Conversation',
+      agentName: 'Qwen Code',
+      workspace: '/workspace',
+      model: {} as any,
+      domain: 'trade',
+    });
+
+    expect(params.extra).toEqual(
+      expect.objectContaining({
+        domain: 'trade',
+      })
+    );
+  });
+
+  it('does not add domain when omitted', () => {
+    const params = buildAgentConversationParams({
+      backend: 'qwen',
+      name: 'Normal Conversation',
+      agentName: 'Qwen Code',
+      workspace: '/workspace',
+      model: {} as any,
+    });
+
+    expect(params.extra).not.toHaveProperty('domain');
+  });
 });

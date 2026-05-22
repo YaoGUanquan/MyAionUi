@@ -1023,11 +1023,12 @@ ${collectedResponses.join('\n')}`;
         if (this.isFirstMessage) {
           const isInTeam = Boolean((this.options as unknown as Record<string, unknown>).teamMcpStdioConfig);
           const useNativeSkills = this.resolveNativeSkillSupport() && !this.options.customWorkspace;
+          const enableTeamGuide = !isInTeam && this.options.backend !== 'codex' && (await shouldInjectTeamGuideMcp(this.options.backend));
           if (useNativeSkills) {
             // Native skill discovery via workspace symlinks — inject preset rules + team guide
             const parts: string[] = [];
             if (this.options.presetContext) parts.push(this.options.presetContext);
-            if (!isInTeam && (await shouldInjectTeamGuideMcp(this.options.backend))) {
+            if (enableTeamGuide) {
               const [{ getTeamGuidePrompt }, { resolveLeaderAssistantLabel }] = await Promise.all([
                 import('@process/team/prompts/teamGuidePrompt.ts'),
                 import('@process/team/prompts/teamGuideAssistant.ts'),
@@ -1048,7 +1049,7 @@ ${collectedResponses.join('\n')}`;
               presetContext: this.options.presetContext,
               enabledSkills: this.options.enabledSkills,
               excludeBuiltinSkills: this.options.excludeBuiltinSkills,
-              enableTeamGuide: !isInTeam && (await shouldInjectTeamGuideMcp(this.options.backend)),
+              enableTeamGuide,
               backend: this.options.backend,
               presetAssistantId: this.options.presetAssistantId || this.options.customAgentId,
             });

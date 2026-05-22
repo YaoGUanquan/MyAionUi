@@ -10,7 +10,14 @@ import type { OpenDialogOptions } from 'electron';
 import type { McpSource } from '../../process/services/mcpServices/McpProtocol';
 import type { AgentBackend, AcpModelInfo } from '../types/acpTypes';
 import type { SlashCommandItem } from '../chat/slash/types';
-import type { IMcpServer, IProvider, TChatConversation, TProviderWithModel, ICssTheme } from '../config/storage';
+import type {
+  IMcpServer,
+  IProvider,
+  TChatConversation,
+  TProviderWithModel,
+  ICssTheme,
+  ConversationDomain,
+} from '../config/storage';
 import type { PreviewHistoryTarget, PreviewSnapshotInfo } from '../types/preview';
 import type {
   UpdateCheckRequest,
@@ -980,6 +987,8 @@ export interface ICreateConversationParams {
     excludeBuiltinSkills?: string[];
     /** Team ownership — conversations with teamId are hidden from the sidebar */
     teamId?: string;
+    /** Optional business domain selected from domain shell routes */
+    domain?: ConversationDomain;
   };
 }
 interface IResetConversationParams {

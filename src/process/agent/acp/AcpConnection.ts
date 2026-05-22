@@ -27,9 +27,14 @@ import path from 'path';
 import { connectClaude, connectCodebuddy, connectCodex, spawnGenericBackend } from './acpConnectors';
 import type { SpawnResult } from './acpConnectors';
 import { killChild, readTextFile, writeJsonRpcMessage, writeTextFile } from './utils';
+import type { ConversationDomain } from '@/common/config/storage';
 
 // Re-export for unit tests that import from this module
 export { createGenericSpawnConfig } from './acpConnectors';
+
+type AcpConversationContext = {
+  domain?: ConversationDomain;
+};
 
 /**
  * Build a user-friendly error message for ACP startup failures.
@@ -772,7 +777,12 @@ export class AcpConnection {
    */
   async newSession(
     cwd: string = process.cwd(),
-    options?: { resumeSessionId?: string; forkSession?: boolean; mcpServers?: AcpSessionMcpServer[] }
+    options?: {
+      resumeSessionId?: string;
+      forkSession?: boolean;
+      mcpServers?: AcpSessionMcpServer[];
+      conversationContext?: AcpConversationContext;
+    }
   ): Promise<AcpResponse & { sessionId?: string }> {
     // Normalize workspace-relative paths:
     // Agents such as qwen already run with `workingDir` as their process cwd.
@@ -796,6 +806,7 @@ export class AcpConnection {
     const response = await this.sendRequest<AcpResponse & { sessionId?: string }>('session/new', {
       cwd: normalizedCwd,
       mcpServers: options?.mcpServers ?? [],
+      ...(options?.conversationContext && { conversationContext: options.conversationContext }),
       // Claude-style ACP uses _meta for resume
       ...(meta && { _meta: meta }),
       // Generic resume parameters for other ACP backends
@@ -831,7 +842,11 @@ export class AcpConnection {
   async resumeSession(
     sessionId: string,
     cwd: string = process.cwd(),
-    options?: { forkSession?: boolean; mcpServers?: AcpSessionMcpServer[] }
+    options?: {
+      forkSession?: boolean;
+      mcpServers?: AcpSessionMcpServer[];
+      conversationContext?: AcpConversationContext;
+    }
   ): Promise<AcpResponse & { sessionId?: string }> {
     const caps = this.initializeResult?.capabilities;
     const useClaudeMetaResume = this.backend === 'claude' || !!caps?._meta?.claudeCode;
@@ -840,7 +855,7 @@ export class AcpConnection {
 
     if (shouldTryLoadSession) {
       try {
-        return await this.loadSession(sessionId, cwd, options?.mcpServers);
+        return await this.loadSession(sessionId, cwd, options?.mcpServers, options?.conversationContext);
       } catch (loadError) {
         const loadErrorMsg = loadError instanceof Error ? loadError.message : String(loadError);
         console.warn(`[ACP ${this.backend}] session/load failed, falling back to session/new resume:`, loadErrorMsg);
@@ -851,6 +866,7 @@ export class AcpConnection {
       resumeSessionId: sessionId,
       forkSession: options?.forkSession,
       mcpServers: options?.mcpServers,
+      conversationContext: options?.conversationContext,
     });
   }
 
@@ -865,7 +881,8 @@ export class AcpConnection {
   async loadSession(
     sessionId: string,
     cwd: string = process.cwd(),
-    mcpServers?: AcpSessionMcpServer[]
+    mcpServers?: AcpSessionMcpServer[],
+    conversationContext?: AcpConversationContext
   ): Promise<AcpResponse & { sessionId?: string }> {
     const normalizedCwd = this.normalizeCwdForAgent(cwd);
 
@@ -873,6 +890,7 @@ export class AcpConnection {
       sessionId,
       cwd: normalizedCwd,
       mcpServers: (mcpServers ?? []) as unknown[],
+      ...(conversationContext && { conversationContext }),
     });
 
     // session/load returns modes/models/configOptions but not sessionId — keep the one we sent
@@ -946,10 +964,15 @@ export class AcpConnection {
     this.firstChunkReceived = false;
     console.log(`[ACP-PERF] send: prompt sent to ${this.backend}`);
 
-    return await this.sendRequest('session/prompt', {
+    const promptRequest: Record<string, unknown> = {
       sessionId: this.sessionId,
       prompt: [{ type: 'text', text: prompt }],
-    });
+    };
+    if (this.backend === 'codex') {
+      promptRequest.messageId = `msg-${Date.now()}`;
+    }
+
+    return await this.sendRequest('session/prompt', promptRequest);
   }
 
   /**

@@ -29,6 +29,7 @@ export type BuildAgentConversationInput = {
   presetResources?: BuildAgentConversationPresetResources;
   sessionMode?: string;
   currentModelId?: string;
+  domain?: ICreateConversationParams['extra']['domain'];
   extra?: Partial<ICreateConversationParams['extra']>;
 };
 
@@ -66,6 +67,7 @@ export function buildAgentConversationParams(input: BuildAgentConversationInput)
     presetResources,
     sessionMode,
     currentModelId,
+    domain,
     extra: extraOverrides,
   } = input;
 
@@ -103,6 +105,7 @@ export function buildAgentConversationParams(input: BuildAgentConversationInput)
 
   if (sessionMode) extra.sessionMode = sessionMode;
   if (currentModelId) extra.currentModelId = currentModelId;
+  if (domain) extra.domain = domain;
 
   return {
     type,

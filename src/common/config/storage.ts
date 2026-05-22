@@ -215,6 +215,8 @@ export interface IEnvStorageRefer {
  */
 export type ConversationSource = 'aionui' | 'telegram' | 'lark' | 'dingtalk' | 'weixin' | 'wecom' | (string & {});
 
+export type ConversationDomain = 'wechat' | 'trade';
+
 interface IChatConversation<T, Extra> {
   createTime: number;
   modifyTime: number;
@@ -264,6 +266,8 @@ export type TChatConversation =
         isHealthCheck?: boolean;
         /** Cron job ID that spawned this conversation */
         cronJobId?: string;
+        /** Optional business domain selected from domain shell routes */
+        domain?: ConversationDomain;
       }
     >
   | Omit<
@@ -311,6 +315,8 @@ export type TChatConversation =
           isHealthCheck?: boolean;
           /** Cron job ID that spawned this conversation */
           cronJobId?: string;
+          /** Optional business domain selected from domain shell routes */
+          domain?: ConversationDomain;
         }
       >,
       'model'
@@ -342,6 +348,8 @@ export type TChatConversation =
           isHealthCheck?: boolean;
           /** Cron job ID that spawned this conversation */
           cronJobId?: string;
+          /** Optional business domain selected from domain shell routes */
+          domain?: ConversationDomain;
         }
       >,
       'model'
@@ -389,6 +397,8 @@ export type TChatConversation =
           isHealthCheck?: boolean;
           /** Cron job ID that spawned this conversation */
           cronJobId?: string;
+          /** Optional business domain selected from domain shell routes */
+          domain?: ConversationDomain;
         }
       >,
       'model'
@@ -413,6 +423,8 @@ export type TChatConversation =
           isHealthCheck?: boolean;
           /** Cron job ID that spawned this conversation */
           cronJobId?: string;
+          /** Optional business domain selected from domain shell routes */
+          domain?: ConversationDomain;
         }
       >,
       'model'
@@ -475,6 +487,8 @@ export type TChatConversation =
         lastTokenUsage?: TokenUsageData;
         /** Cron job ID that spawned this conversation */
         cronJobId?: string;
+        /** Optional business domain selected from domain shell routes */
+        domain?: ConversationDomain;
       }
     >;
 

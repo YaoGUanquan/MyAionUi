@@ -84,6 +84,20 @@ describe('AcpConnection.loadSession', () => {
     expect(sendRequest).toHaveBeenCalledWith('session/load', expect.objectContaining({ sessionId: 's1' }));
   });
 
+  it('passes conversation context through session/load when provided', async () => {
+    const sendRequest = vi.spyOn(conn as any, 'sendRequest').mockResolvedValue({ sessionId: 's1' });
+
+    await (conn as any).loadSession('s1', '/tmp', [], { domain: 'trade' });
+
+    expect(sendRequest).toHaveBeenCalledWith(
+      'session/load',
+      expect.objectContaining({
+        sessionId: 's1',
+        conversationContext: { domain: 'trade' },
+      })
+    );
+  });
+
   it('returns the raw response', async () => {
     const mockResponse = { sessionId: 's1', extra: 'data' };
     vi.spyOn(conn as any, 'sendRequest').mockResolvedValue(mockResponse);
@@ -283,7 +297,7 @@ describe('AcpConnection.resumeSession capability routing', () => {
 
     const result = await conn.resumeSession('s1', '/tmp', { mcpServers: [] });
 
-    expect(loadSession).toHaveBeenCalledWith('s1', '/tmp', []);
+    expect(loadSession).toHaveBeenCalledWith('s1', '/tmp', [], undefined);
     expect(newSession).not.toHaveBeenCalled();
     expect(result.sessionId).toBe('s1');
   });
@@ -339,5 +353,27 @@ describe('AcpConnection.resumeSession capability routing', () => {
       })
     );
     expect(result.sessionId).toBe('fresh');
+  });
+
+  it('passes conversation context to newSession on resume fallback', async () => {
+    const conn = makeConnection('qwen');
+    setInitializeResponse(conn, { agentCapabilities: { loadSession: true } });
+
+    vi.spyOn(conn, 'loadSession').mockRejectedValue(new Error('load failed'));
+    const newSession = vi.spyOn(conn, 'newSession').mockResolvedValue({ sessionId: 'fresh' } as any);
+
+    await (conn as any).resumeSession('s1', '/tmp', {
+      mcpServers: [],
+      conversationContext: { domain: 'trade' },
+    });
+
+    expect(newSession).toHaveBeenCalledWith(
+      '/tmp',
+      expect.objectContaining({
+        resumeSessionId: 's1',
+        mcpServers: [],
+        conversationContext: { domain: 'trade' },
+      })
+    );
   });
 });

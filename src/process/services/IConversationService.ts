@@ -7,6 +7,7 @@
 // src/process/services/IConversationService.ts
 
 import type { TChatConversation, TProviderWithModel, ConversationSource } from '@/common/config/storage';
+import type { ConversationDomain } from '@/common/config/storage';
 import type { AgentBackend } from '@/common/types/acpTypes';
 import type { AgentType } from '@process/task/agentTypes';
 
@@ -33,6 +34,7 @@ export interface CreateConversationParams {
     presetAssistantId?: string;
     sessionMode?: string;
     isHealthCheck?: boolean;
+    domain?: ConversationDomain;
     [key: string]: unknown;
   };
 }

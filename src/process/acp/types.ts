@@ -1,6 +1,7 @@
 // src/process/acp/types.ts
 
 import type { TMessage } from '@/common/chat/chatLib';
+import type { ConversationDomain } from '@/common/config/storage';
 import type {
   AuthMethod,
   ContentBlock,
@@ -40,6 +41,7 @@ export type AgentConfig = {
   cwd: string;
   mcpServers?: McpServer[];
   additionalDirectories?: string[];
+  conversationContext?: AcpConversationContext;
 
   // 可选预设（来自 relate_type = 'assistant'）
   presetPrompts?: string[];
@@ -73,6 +75,10 @@ export type InitialDesiredConfig = {
   model?: string;
   mode?: string;
   configOptions?: Record<string, string | boolean>;
+};
+
+export type AcpConversationContext = {
+  domain?: ConversationDomain;
 };
 
 // ─── Prompt ─────────────────────────────────────────────────────

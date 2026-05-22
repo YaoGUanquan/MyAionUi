@@ -46,9 +46,16 @@ export class ConversationServiceImpl implements IConversationService {
     if (mergeExtra && updates.extra) {
       const existing = await this.repo.getConversation(id);
       if (existing) {
+        const existingExtra = existing.extra as Record<string, unknown>;
+        const incomingExtra = { ...(updates.extra as Record<string, unknown>) };
+        const existingDomain = existingExtra.domain;
+        const incomingDomain = incomingExtra.domain;
+        if (existingDomain !== undefined && incomingDomain !== undefined && incomingDomain !== existingDomain) {
+          incomingExtra.domain = existingDomain;
+        }
         finalUpdates = {
           ...updates,
-          extra: { ...existing.extra, ...updates.extra },
+          extra: { ...existing.extra, ...incomingExtra },
         } as Partial<TChatConversation>;
       }
     }

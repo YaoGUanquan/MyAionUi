@@ -16,6 +16,7 @@ import { useCallback, useRef } from 'react';
 import { type TFunction } from 'i18next';
 import type { NavigateFunction } from 'react-router-dom';
 import type { AcpBackend, AvailableAgent, EffectiveAgentInfo } from '../types';
+import type { ConversationDomain } from '@/common/config/storage';
 
 export type GuidSendDeps = {
   // Input state
@@ -27,6 +28,7 @@ export type GuidSendDeps = {
   setDir: React.Dispatch<React.SetStateAction<string>>;
   setLoading: React.Dispatch<React.SetStateAction<boolean>>;
   loading: boolean;
+  domainKey?: ConversationDomain;
 
   // Agent state
   selectedAgent: string;
@@ -87,6 +89,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
     setDir,
     setLoading,
     loading,
+    domainKey,
     selectedAgent,
     selectedAgentKey,
     selectedAgentInfo,
@@ -168,6 +171,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
               }
             : undefined,
           sessionMode: selectedMode,
+          domain: domainKey,
           extra: {
             defaultFiles: files,
             excludeBuiltinSkills,
@@ -224,6 +228,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
         customWorkspace: isCustomWorkspace,
         extra: {
           defaultFiles: files,
+          domain: domainKey,
           runtimeValidation: {
             expectedWorkspace: finalWorkspace,
             expectedBackend: openclawAgentInfo?.backend,
@@ -282,6 +287,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
         customWorkspace: isCustomWorkspace,
         extra: {
           defaultFiles: files,
+          domain: domainKey,
           enabledSkills: isPreset ? enabledSkills : undefined,
           excludeBuiltinSkills,
         },
@@ -333,6 +339,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
             defaultFiles: files,
             workspace: finalWorkspace,
             customWorkspace: isCustomWorkspace,
+            domain: domainKey,
             presetRules: isPreset ? presetRules : undefined,
             enabledSkills: isPreset ? enabledSkills : undefined,
             excludeBuiltinSkills,
@@ -411,6 +418,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
           : undefined,
         sessionMode: selectedMode,
         currentModelId: selectedAcpModel || undefined,
+        domain: domainKey,
         extra: {
           defaultFiles: files,
           excludeBuiltinSkills,
@@ -470,6 +478,7 @@ export const useGuidSend = (deps: GuidSendDeps): GuidSendResult => {
     input,
     files,
     dir,
+    domainKey,
     selectedAgent,
     selectedAgentKey,
     selectedAgentInfo,

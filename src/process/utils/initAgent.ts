@@ -212,6 +212,7 @@ export const createGeminiAgent = async (
       sessionMode,
       // Explicit marker for temporary health-check conversations
       isHealthCheck,
+      domain: options.extra?.domain,
     },
     desc: finalCustomWorkspace ? newWorkspace : '',
     createTime: Date.now(),
@@ -263,6 +264,7 @@ export const createAcpAgent = async (options: ICreateConversationParams): Promis
       currentModelId: extra.currentModelId,
       // Explicit marker for temporary health-check conversations
       isHealthCheck: extra.isHealthCheck,
+      domain: extra.domain,
       // Team ownership — used by sidebar filter to hide team-owned conversations
       ...(extra.teamId ? { teamId: extra.teamId } : {}),
     },
@@ -299,6 +301,7 @@ export const createNanobotAgent = async (options: ICreateConversationParams): Pr
       customWorkspace,
       enabledSkills: extra.enabledSkills,
       presetAssistantId: extra.presetAssistantId,
+      domain: extra.domain,
     },
     createTime: Date.now(),
     modifyTime: Date.now(),
@@ -332,6 +335,7 @@ export const createRemoteAgent = async (options: ICreateConversationParams): Pro
       remoteAgentId: extra.remoteAgentId!,
       enabledSkills: extra.enabledSkills,
       presetAssistantId: extra.presetAssistantId,
+      domain: extra.domain,
     },
     createTime: Date.now(),
     modifyTime: Date.now(),
@@ -369,6 +373,7 @@ export const createAionrsAgent = async (options: ICreateConversationParams): Pro
       enabledSkills: extra.enabledSkills,
       presetAssistantId: extra.presetAssistantId,
       sessionMode: extra.sessionMode,
+      domain: extra.domain,
     },
     desc: customWorkspace ? workspace : '',
     createTime: Date.now(),
@@ -421,6 +426,7 @@ export const createOpenClawAgent = async (options: ICreateConversationParams): P
       enabledSkills: extra.enabledSkills,
       // Preset assistant ID for displaying name and avatar in conversation panel
       presetAssistantId: extra.presetAssistantId,
+      domain: extra.domain,
     },
     createTime: Date.now(),
     modifyTime: Date.now(),

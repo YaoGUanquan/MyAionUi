@@ -173,6 +173,23 @@ describe('AcpConnection timeout handling', () => {
 
     return promptPromise;
   });
+
+  it('should include messageId for codex prompt requests', async () => {
+    const conn = makeConnection();
+    (conn as any).backend = 'codex';
+    (conn as any).sendRequest = vi.fn().mockResolvedValue({ stopReason: 'end_turn' });
+
+    await conn.sendPrompt('test');
+
+    expect((conn as any).sendRequest).toHaveBeenCalledWith(
+      'session/prompt',
+      expect.objectContaining({
+        sessionId: 'test-session',
+        prompt: [{ type: 'text', text: 'test' }],
+        messageId: expect.any(String),
+      })
+    );
+  });
 });
 
 // ─── Permission request timeout ────────────────────────────────────────────

@@ -183,6 +183,21 @@ describe('AcpAgent.start() — applySessionMode', () => {
     expect(mockSetSessionMode).not.toHaveBeenCalled();
   });
 
+  it('does not apply default sessionMode for codex backend', async () => {
+    const agent = new AcpAgent({
+      ...baseConfig,
+      backend: 'codex' as const,
+      extra: {
+        backend: 'codex',
+        sessionMode: 'default',
+      },
+    });
+
+    await agent.start();
+
+    expect(mockSetSessionMode).not.toHaveBeenCalled();
+  });
+
   it('does not apply sessionMode when value is undefined', async () => {
     const agent = new AcpAgent({
       ...baseConfig,
@@ -226,6 +241,21 @@ describe('AcpAgent.start() — applySessionMode', () => {
     // Should apply YOLO mode (bypassPermissions), not the sessionMode
     expect(mockSetSessionMode).toHaveBeenCalledOnce();
     expect(mockSetSessionMode).toHaveBeenCalledWith('bypassPermissions');
+  });
+
+  it('does not attempt non-YOLO session mode application for codex backend', async () => {
+    const agent = new AcpAgent({
+      ...baseConfig,
+      backend: 'codex' as const,
+      extra: {
+        backend: 'codex',
+        sessionMode: 'acceptEdits',
+      },
+    });
+
+    await agent.start();
+
+    expect(mockSetSessionMode).not.toHaveBeenCalled();
   });
 
   it('throws when YOLO mode fails (fatal=true)', async () => {

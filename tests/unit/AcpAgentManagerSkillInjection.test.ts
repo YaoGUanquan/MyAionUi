@@ -260,4 +260,19 @@ describe('AcpAgentManager — first-message skill injection', () => {
     expect(sentContent).toContain('[User Request]');
     expect(sentContent).toContain('Test message');
   });
+
+  it('does not inject team guide prompt for codex first message', async () => {
+    const manager = createManager({
+      backend: 'codex',
+      customWorkspace: false,
+    });
+
+    await sendFirstMessage(manager, 'Trade request');
+
+    expect(mockPrepareFirstMessage).not.toHaveBeenCalled();
+    const sentContent = mockAgentSendMessage.mock.calls[0][0].content as string;
+    expect(sentContent).not.toContain('Team Mode');
+    expect(sentContent).not.toContain('aion_create_team');
+    expect(sentContent).toContain('Trade request');
+  });
 });

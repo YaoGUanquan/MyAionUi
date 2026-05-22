@@ -63,6 +63,7 @@ vi.mock('@process/services/ccSwitchModelSource', () => ccSwitchMock);
 
 import { execFile as execFileCb, spawn } from 'child_process';
 import { execFileSync } from 'child_process';
+import * as shellEnv from '../../src/process/utils/shellEnv';
 import {
   connectClaude,
   connectCodex,
@@ -75,6 +76,13 @@ const mockExecFile = vi.mocked(execFileCb);
 const mockExecFileSync = vi.mocked(execFileSync);
 const mockFsPromises = vi.mocked(fsPromisesMock);
 const mockSpawn = vi.mocked(spawn);
+const mockResolveNpxPath = vi.mocked(shellEnv.resolveNpxPath);
+const mockResolveNpxDirect = vi.mocked(shellEnv.resolveNpxDirect);
+
+beforeEach(() => {
+  mockResolveNpxPath.mockReturnValue('/bundled/bun');
+  mockResolveNpxDirect.mockReturnValue(null);
+});
 
 describe('spawnNpxBackend - Windows UTF-8 fix', () => {
   const mockChild = { unref: vi.fn() };
@@ -186,6 +194,10 @@ describe('createGenericSpawnConfig - Windows path handling', () => {
   });
 
   afterEach(() => {
+    void import('@process/utils/shellEnv').then((shellEnv) => {
+      vi.mocked(shellEnv.resolveNpxPath).mockReturnValue('/bundled/bun');
+      vi.mocked(shellEnv.resolveNpxDirect).mockReturnValue(null);
+    });
     if (originalPlatform) {
       Object.defineProperty(process, 'platform', originalPlatform);
     }
@@ -296,6 +308,53 @@ describe('connectCodex - Windows diagnostics', () => {
     );
     expect(setup).toHaveBeenCalledTimes(1);
     expect(cleanup).not.toHaveBeenCalled();
+  });
+});
+
+describe('connectCodex - Windows fallback without bundled bun', () => {
+  let originalPlatform: PropertyDescriptor | undefined;
+  let originalArch: PropertyDescriptor | undefined;
+  const mockChild = { unref: vi.fn() };
+
+  beforeEach(() => {
+    originalPlatform = Object.getOwnPropertyDescriptor(process, 'platform');
+    originalArch = Object.getOwnPropertyDescriptor(process, 'arch');
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    Object.defineProperty(process, 'arch', { value: 'x64', configurable: true });
+    mockExecFileSync.mockImplementation(() => 'v20.10.0\n' as never);
+    mockSpawn.mockReturnValue(mockChild as unknown as ReturnType<typeof spawn>);
+    mockFsPromises.readdir.mockRejectedValue(new Error('cache not found'));
+    mockFsPromises.stat.mockRejectedValue(new Error('not found'));
+    mockResolveNpxPath.mockReturnValue('bun.exe');
+    mockResolveNpxDirect.mockReturnValue({
+      nodePath: 'C:\\node\\node.exe',
+      npxScript: 'C:\\node\\node_modules\\npm\\bin\\npx-cli.js',
+    });
+  });
+
+  afterEach(() => {
+    if (originalPlatform) {
+      Object.defineProperty(process, 'platform', originalPlatform);
+    }
+    if (originalArch) {
+      Object.defineProperty(process, 'arch', originalArch);
+    }
+    vi.clearAllMocks();
+  });
+
+  it('uses node.exe + npx-cli.js when bundled bun is unavailable', async () => {
+    const hooks = {
+      setup: vi.fn(async () => {}),
+      cleanup: vi.fn(async () => {}),
+    };
+
+    await connectCodex('C:\\cwd', hooks);
+
+    const [command, args] = mockSpawn.mock.calls[0];
+    expect(command).toContain('chcp 65001 >nul && "C:\\node\\node.exe"');
+    expect(args).toContain('C:\\node\\node_modules\\npm\\bin\\npx-cli.js');
+    expect(args).toContain('@zed-industries/codex-acp-win32-x64@0.9.5');
+    expect(args).not.toContain('--bun');
   });
 });
 

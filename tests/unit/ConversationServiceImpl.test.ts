@@ -137,6 +137,25 @@ describe('ConversationServiceImpl.updateConversation', () => {
       expect.objectContaining({ extra: expect.objectContaining({ existing: true, newField: 1 }) })
     );
   });
+
+  it('does not allow rewriting an existing domain', async () => {
+    const existing = { id: 'c1', extra: { workspace: '/ws', domain: 'trade', existing: true } } as any;
+    const repo = makeRepo({ getConversation: vi.fn(() => existing) });
+    const svc = new ConversationServiceImpl(repo);
+
+    await svc.updateConversation('c1', { extra: { domain: 'wechat', newField: 1 } } as any, true);
+
+    expect(repo.updateConversation).toHaveBeenCalledWith(
+      'c1',
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          domain: 'trade',
+          existing: true,
+          newField: 1,
+        }),
+      })
+    );
+  });
 });
 
 describe('ConversationServiceImpl.createWithMigration', () => {
@@ -368,6 +387,26 @@ describe('ConversationServiceImpl.createWithMigration', () => {
     expect(call.createTime).toBeGreaterThanOrEqual(now);
     expect(call.modifyTime).toBeGreaterThanOrEqual(now);
   });
+
+  it('preserves conversation domain during migration', async () => {
+    const repo = makeRepo();
+    const svc = new ConversationServiceImpl(repo);
+
+    await svc.createWithMigration({
+      conversation: makeConversation({
+        id: 'target-conv',
+        extra: { domain: 'trade' } as any,
+      }),
+    });
+
+    expect(repo.createConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          domain: 'trade',
+        }),
+      })
+    );
+  });
 });
 
 describe('ConversationServiceImpl.createConversation', () => {
@@ -432,6 +471,28 @@ describe('ConversationServiceImpl.createConversation', () => {
     );
     expect(result.extra).toMatchObject({
       cronJobId: 'job-123',
+    });
+  });
+
+  it('persists domain when provided in create params', async () => {
+    const repo = makeRepo();
+    const svc = new ConversationServiceImpl(repo);
+
+    const result = await svc.createConversation({
+      type: 'acp',
+      model: { provider: 'anthropic', model: 'claude-3-5-sonnet' } as any,
+      extra: { workspace: '/ws', backend: 'claude', domain: 'trade' },
+    });
+
+    expect(repo.createConversation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        extra: expect.objectContaining({
+          domain: 'trade',
+        }),
+      })
+    );
+    expect(result.extra).toMatchObject({
+      domain: 'trade',
     });
   });
 
